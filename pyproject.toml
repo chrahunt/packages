@@ -13,9 +13,13 @@ requests-cache = "^0.5.2"
 tqdm = "^4.40.2"
 redis = "^3.3.11"
 click = "^7.0"
+cached_property = "^1.5.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
+
+[tool.poetry.scripts]
+packages = "packages.cli:cli"
 
 [build-system]
 requires = ["poetry>=0.12"]

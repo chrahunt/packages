@@ -1,3 +1,6 @@
+"""
+Pull from PyPI JSON API to local MongoDB instance.
+"""
 import itertools
 import logging
 import time
@@ -14,6 +17,7 @@ from pymongo import MongoClient, UpdateOne
 from pymongo.collection import Collection
 from pymongo.errors import BulkWriteError
 
+from ._options import db_name_option
 from ..network import make_session
 
 
@@ -44,7 +48,7 @@ def get_project_names(doc: Any) -> Iterator[str]:
 def query_pypi_with(s: requests.Session) -> Optional[Any]:
     def query_pypi(name: str) -> Optional[Any]:
         r = s.get(f'https://pypi.org/pypi/{name}/json')
-        if r.status_code not in allowable_codes:
+        if r.status_code not in (200, 404):
             logger.warning('Error retrieving %s: %d', name, r.status_code)
             return None
 
@@ -83,7 +87,7 @@ def to_update(obj: Any) -> UpdateOne:
 def aggregate(
     iterable: Iterable[UpdateOne], size: int = 10
 ) -> Iterator[List[UpdateOne]]:
-    """Break into chunks of at most size.
+    """Break into chunks of at most `size`.
     """
     it = iter(iterable)
     try:
@@ -105,11 +109,17 @@ def bulk_write_to(collection: Collection) -> Callable[[Iterable[Any]], Any]:
 
 @click.command("update-db")
 @click.option("--limit", type=int, default=None, help="Limit on number of projects to update")
-def command(limit):
+@db_name_option
+def command(limit, db_name):
+    """Populate/update database of JSON info for PyPI projects
+
+    Persists HTTP cache in Redis and JSON data in MongoDB - both must have been
+    started before calling this.
+    """
     s = make_session()
     names = get_names(s)
     client = MongoClient()
-    db = client.trash
+    db = client[db_name]
 
     # Use list so tqdm shows progress.
     with_progress = tqdm(list(names)[:limit])

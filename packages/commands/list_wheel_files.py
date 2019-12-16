@@ -1,39 +1,7 @@
 import click
 from pymongo import MongoClient
 
-
-wheelfile_pipeline = [
-    {
-        "$match": {
-            "urls.filename": {
-                "$regex": "\\.whl$"
-            }
-        }
-    }, {
-        "$unwind": {
-            "path": "$urls",
-            "preserveNullAndEmptyArrays": False
-        }
-    }, {
-        "$project": {
-            "urls": 1
-        }
-    }, {
-        '$addFields': {
-            'urls._id': '$_id'
-        }
-    }, {
-        "$replaceRoot": {
-            "newRoot": "$urls"
-        }
-    }, {
-        "$match": {
-            "filename": {
-                "$regex": "\\.whl$"
-            }
-        }
-    }
-]
+from ..data import wheelfile_pipeline
 
 
 @click.command("list-wheel-files")
